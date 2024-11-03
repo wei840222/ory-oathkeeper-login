@@ -124,6 +124,7 @@ func main() {
 			}
 
 			res, err := ghostServer.R().
+				SetHeader("X-Forwarded-Proto", "https").
 				SetBody(map[string]string{
 					"username": os.Getenv("GHOST_USERNAME"),
 					"password": os.Getenv("GHOST_PASSWORD"),
