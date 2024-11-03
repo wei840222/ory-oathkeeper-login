@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -11,11 +12,36 @@ import (
 )
 
 func main() {
+	argoCDServer := resty.New().
+		SetDebug(true).
+		SetBaseURL(os.Getenv("ARGO_CD_SERVER_URL"))
+
 	r := gin.Default()
 
 	r.GET("/", func(c *gin.Context) {
 		c.String(http.StatusOK, "OK")
 	})
+
+	session := r.Group("/session")
+	{
+		session.GET("/argo-cd", func(c *gin.Context) {
+			if token, err := c.Cookie("argocd.token"); err == nil {
+				res, err := argoCDServer.R().
+					SetCookie(&http.Cookie{
+						Name:  "argocd.token",
+						Value: token,
+					}).
+					Get("/api/v1/session/userinfo")
+				if err == nil && res.StatusCode() == http.StatusOK && gjson.GetBytes(res.Body(), "loggedIn").Bool() {
+					var b gin.H
+					json.Unmarshal(res.Body(), &b)
+					c.JSON(http.StatusOK, b)
+					return
+				}
+			}
+			c.JSON(http.StatusUnauthorized, gin.H{"loggedIn": false})
+		})
+	}
 
 	login := r.Group("/login")
 	{
@@ -28,9 +54,6 @@ func main() {
 			c.Redirect(http.StatusFound, returnURL)
 		})
 
-		argoCDServer := resty.New().
-			SetDebug(true).
-			SetBaseURL(os.Getenv("ARGO_CD_SERVER_URL"))
 		login.GET("/argo-cd", func(c *gin.Context) {
 			if token, err := c.Cookie("argocd.token"); err == nil {
 				res, err := argoCDServer.R().
