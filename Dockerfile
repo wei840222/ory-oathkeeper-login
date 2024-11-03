@@ -1,4 +1,4 @@
-FROM golang:1.22.3-bookworm AS builder
+FROM golang:1.22.5-bookworm AS builder
 
 WORKDIR /src
 
@@ -26,7 +26,7 @@ ARG gid=1000
 RUN groupadd -g ${gid} ${group} \
     && useradd -l -u ${uid} -g ${gid} -m -s /bin/bash ${user}
 
-ENV HOME /home/login-server
+ENV HOME=/home/login-server
 
 RUN mkdir -p ${HOME}
 
