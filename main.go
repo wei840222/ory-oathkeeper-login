@@ -69,15 +69,6 @@ func main() {
 
 	login := r.Group("/login")
 	{
-		login.GET("/", func(c *gin.Context) {
-			returnURL := c.GetHeader("X-Login-Server-Path")
-			if returnURL == "" {
-				c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "required X-Login-Server-Path header"})
-				return
-			}
-			c.Redirect(http.StatusFound, returnURL)
-		})
-
 		login.GET("/argo-cd", func(c *gin.Context) {
 			if token, err := c.Cookie("argocd.token"); err == nil {
 				res, err := argoCDServer.R().
