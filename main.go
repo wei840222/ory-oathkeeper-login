@@ -48,11 +48,12 @@ func main() {
 		session.GET("/ghost", func(c *gin.Context) {
 			if session, err := c.Cookie("ghost-admin-api-session"); err == nil {
 				res, err := ghostServer.R().
+					SetHeader("X-Forwarded-Proto", "https").
 					SetCookie(&http.Cookie{
 						Name:  "ghost-admin-api-session",
 						Value: session,
 					}).
-					Get("/ghost/api/admin/users/me")
+					Get("/ghost/api/admin/users/me/")
 				if err == nil && res.IsSuccess() {
 					c.JSON(http.StatusOK, gin.H{
 						"subject": gjson.GetBytes(res.Body(), "users.0.id").String(),
