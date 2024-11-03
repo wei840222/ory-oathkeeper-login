@@ -20,9 +20,9 @@ func main() {
 	login := r.Group("/login")
 	{
 		login.GET("/", func(c *gin.Context) {
-			returnURL := c.GetHeader("X-LOGIN-SERVER-PATH")
+			returnURL := c.GetHeader("X-Login-Server-Path")
 			if returnURL == "" {
-				c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "required X-LOGIN-SERVER-PATH header"})
+				c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "required X-Login-Server-Path header"})
 				return
 			}
 			c.Redirect(http.StatusFound, returnURL)
@@ -39,7 +39,7 @@ func main() {
 						Value: token,
 					}).
 					Get("/api/v1/session/userinfo")
-				if err == nil && res.StatusCode() == http.StatusOK {
+				if err == nil && res.StatusCode() == http.StatusOK && gjson.GetBytes(res.Body(), "loggedIn").Bool() {
 					c.Redirect(http.StatusFound, c.DefaultQuery("return_url", "/"))
 					return
 				}
