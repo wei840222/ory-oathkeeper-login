@@ -12,13 +12,10 @@ import (
 
 func main() {
 	argoCDServer := resty.New().
-		SetDebug(true).
 		SetBaseURL(os.Getenv("ARGO_CD_SERVER_URL"))
 	ghostServer := resty.New().
-		SetDebug(true).
 		SetBaseURL(os.Getenv("GHOST_SERVER_URL"))
 	n8nServer := resty.New().
-		SetDebug(true).
 		SetBaseURL(os.Getenv("N8N_SERVER_URL"))
 
 	r := gin.Default()
