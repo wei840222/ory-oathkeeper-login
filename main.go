@@ -17,6 +17,9 @@ func main() {
 	ghostServer := resty.New().
 		SetDebug(true).
 		SetBaseURL(os.Getenv("GHOST_SERVER_URL"))
+	n8nServer := resty.New().
+		SetDebug(true).
+		SetBaseURL(os.Getenv("N8N_SERVER_URL"))
 
 	r := gin.Default()
 
@@ -59,6 +62,28 @@ func main() {
 						"subject": gjson.GetBytes(res.Body(), "users.0.id").String(),
 						"extra": gin.H{
 							"email": gjson.GetBytes(res.Body(), "users.0.email").String(),
+						},
+					})
+					return
+				}
+			}
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
+		})
+
+		session.GET("/n8n", func(c *gin.Context) {
+			if auth, err := c.Cookie("n8n-auth"); err == nil {
+				res, err := n8nServer.R().
+					SetHeader("Browser-Id", c.GetHeader("Browser-Id")).
+					SetCookie(&http.Cookie{
+						Name:  "n8n-auth",
+						Value: auth,
+					}).
+					Get("/rest/login")
+				if err == nil && res.IsSuccess() {
+					c.JSON(http.StatusOK, gin.H{
+						"subject": gjson.GetBytes(res.Body(), "data.id").String(),
+						"extra": gin.H{
+							"email": gjson.GetBytes(res.Body(), "data.email").String(),
 						},
 					})
 					return
@@ -132,6 +157,39 @@ func main() {
 
 			c.Header("Set-Cookie", res.Header().Get("Set-Cookie"))
 			c.Redirect(http.StatusFound, c.DefaultQuery("return_url", "/ghost"))
+		})
+
+		login.GET("/n8n", func(c *gin.Context) {
+			if auth, err := c.Cookie("n8n-auth"); err == nil {
+				res, err := n8nServer.R().
+					SetHeader("Browser-Id", c.GetHeader("Browser-Id")).
+					SetCookie(&http.Cookie{
+						Name:  "n8n-auth",
+						Value: auth,
+					}).
+					Get("/rest/login")
+				if err == nil && res.IsSuccess() {
+					c.Redirect(http.StatusFound, c.DefaultQuery("return_url", "/"))
+					return
+				}
+			}
+
+			res, err := n8nServer.R().
+				SetHeader("Browser-Id", c.GetHeader("Browser-Id")).
+				SetBody(map[string]string{
+					"email":    os.Getenv("N8N_USERNAME"),
+					"password": os.Getenv("N8N_PASSWORD"),
+				}).
+				Post("/rest/login")
+			if err != nil {
+				panic(err)
+			}
+			if res.IsError() {
+				panic(fmt.Sprintf("failed to login to n8n: %s %s", res.Status(), res))
+			}
+
+			c.Header("Set-Cookie", res.Header().Get("Set-Cookie"))
+			c.Redirect(http.StatusFound, c.DefaultQuery("return_url", "/"))
 		})
 	}
 

@@ -18,26 +18,18 @@ RUN set -x && apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -
 
 ARG user=login-server
 ARG group=login-server
-ARG uid=1000
-ARG gid=1000
+ARG uid=10000
+ARG gid=10001
 
 # If you bind mount a volume from the host or a data container,
 # ensure you use the same uid
 RUN groupadd -g ${gid} ${group} \
     && useradd -l -u ${uid} -g ${gid} -m -s /bin/bash ${user}
 
-ENV HOME=/home/login-server
-
-RUN mkdir -p ${HOME}
-
-COPY --from=builder /src/login-server ${HOME}/login-server
-
-RUN chown -R ${uid}:${gid} ${HOME}
-
 USER ${user}
 
-WORKDIR ${HOME}
+COPY --from=builder --chown=${uid}:${gid} /src/login-server /usr/bin/login-server
 
 EXPOSE 8080
 
-ENTRYPOINT [ "./login-server" ]
+ENTRYPOINT [ "login-server" ]
