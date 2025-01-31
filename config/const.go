@@ -27,6 +27,7 @@ const (
 	ConfigKeyArgoCDPassword  = "argo-cd.password"
 
 	ConfigKeyGhostServerURL = "ghost.server-url"
+	ConfigKeyGhostOrigin    = "ghost.origin-url"
 	ConfigKeyGhostUsername  = "ghost.username"
 	ConfigKeyGhostPassword  = "ghost.password"
 

@@ -22,6 +22,7 @@ argo-cd:
   password: password
 ghost:
   server-url: http://ghost.example.com
+  origin-url: https://ghost.example.com
   username: admin
   password: password
 n8n:

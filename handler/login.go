@@ -54,7 +54,10 @@ func (h *LoginHandler) ArgoCD(c *gin.Context) {
 func (h *LoginHandler) Ghost(c *gin.Context) {
 	if session, err := c.Cookie("ghost-admin-api-session"); err == nil {
 		res, err := h.client.R().
-			SetHeader("X-Forwarded-Proto", "https").
+			SetHeaders(map[string]string{
+				"X-Forwarded-Proto": "https",
+				"Origin":            viper.GetString(config.ConfigKeyGhostOrigin),
+			}).
 			SetCookie(&http.Cookie{
 				Name:  "ghost-admin-api-session",
 				Value: session,
@@ -67,7 +70,10 @@ func (h *LoginHandler) Ghost(c *gin.Context) {
 	}
 
 	res, err := h.client.R().
-		SetHeader("X-Forwarded-Proto", "https").
+		SetHeaders(map[string]string{
+			"X-Forwarded-Proto": "https",
+			"Origin":            viper.GetString(config.ConfigKeyGhostOrigin),
+		}).
 		SetBody(map[string]string{
 			"username": viper.GetString(config.ConfigKeyGhostUsername),
 			"password": viper.GetString(config.ConfigKeyGhostPassword),
