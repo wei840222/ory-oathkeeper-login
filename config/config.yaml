@@ -9,3 +9,15 @@ gin:
   mode: debug
   host: 0.0.0.0
   port: 8080
+argo-cd:
+  server-url: http://argocd.example.com
+  username: admin
+  password: password
+ghost:
+  server-url: http://ghost.example.com
+  username: admin
+  password: password
+n8n:
+  server-url: http://n8n.example.com
+  username: admin
+  password: password

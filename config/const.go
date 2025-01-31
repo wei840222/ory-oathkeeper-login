@@ -15,15 +15,15 @@ const (
 	ConfigKeyGinPort = "gin.port"
 	ConfigKeyGinHost = "gin.host"
 
-	ConfigKeyArgoCDServerURL = "argo-cd.server.url"
+	ConfigKeyArgoCDServerURL = "argo-cd.server-url"
 	ConfigKeyArgoCDUsername  = "argo-cd.username"
 	ConfigKeyArgoCDPassword  = "argo-cd.password"
 
-	ConfigKeyGhostServerURL = "ghost.server.url"
+	ConfigKeyGhostServerURL = "ghost.server-url"
 	ConfigKeyGhostUsername  = "ghost.username"
 	ConfigKeyGhostPassword  = "ghost.password"
 
-	ConfigKeyN8NServerURL = "n8n.server.url"
+	ConfigKeyN8NServerURL = "n8n.server-url"
 	ConfigKeyN8NUsername  = "n8n.username"
 	ConfigKeyN8NPassword  = "n8n.password"
 )

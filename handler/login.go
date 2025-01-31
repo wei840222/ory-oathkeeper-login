@@ -97,7 +97,7 @@ func (h *LoginHandler) N8N(c *gin.Context) {
 				Name:  "n8n-auth",
 				Value: auth,
 			}).
-			Get("/rest/login")
+			Get(JoinURL(viper.GetString(config.ConfigKeyN8NServerURL), "/rest/login"))
 		if err == nil && res.IsSuccess() {
 			c.Redirect(http.StatusFound, c.DefaultQuery("return_url", "/"))
 			return

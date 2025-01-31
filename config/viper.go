@@ -17,7 +17,7 @@ func InitViper() error {
 			return fmt.Errorf("fatal error config file: %w", err)
 		}
 	}
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_"))
 	viper.AutomaticEnv()
 
 	return nil
