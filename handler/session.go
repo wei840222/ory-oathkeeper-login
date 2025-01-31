@@ -100,7 +100,7 @@ func (h *SessionHandler) Ghost(c *gin.Context) {
 		res, err := h.client.R().
 			SetHeaders(map[string]string{
 				"X-Forwarded-Proto": "https",
-				"Origin":            viper.GetString(config.ConfigKeyGhostOrigin),
+				"Origin":            viper.GetString(config.ConfigKeyGhostOriginURL),
 			}).
 			SetCookie(&http.Cookie{
 				Name:  "ghost-admin-api-session",
