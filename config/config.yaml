@@ -1,0 +1,11 @@
+log:
+  level: debug
+  format: console
+  color: true
+o11y:
+  host: 0.0.0.0
+  port: 9090
+gin:
+  mode: debug
+  host: 0.0.0.0
+  port: 8080

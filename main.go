@@ -1,194 +1,73 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
-	"net/http"
 	"os"
+	"strings"
 
-	"github.com/gin-gonic/gin"
-	"github.com/go-resty/resty/v2"
-	"github.com/tidwall/gjson"
+	"github.com/ipfans/fxlogger"
+	"github.com/rs/zerolog/log"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	_ "go.uber.org/automaxprocs"
+	"go.uber.org/fx"
+
+	"github.com/wei840222/login-server/config"
+	"github.com/wei840222/login-server/handler"
 )
 
+var (
+	flagReplacer = strings.NewReplacer(".", "-")
+)
+
+var rootCmd = &cobra.Command{
+	Use:   "login-server",
+	Short: "Login Server is an Ory Oathkeeper extension.",
+	Long:  `Login Server is an Ory Oathkeeper extension for login third party web apps.`,
+	PreRunE: func(cmd *cobra.Command, _ []string) error {
+		if err := config.InitViper(); err != nil {
+			return err
+		}
+
+		viper.BindPFlag(config.ConfigKeyLogLevel, cmd.Flags().Lookup(flagReplacer.Replace(config.ConfigKeyLogLevel)))
+		viper.BindPFlag(config.ConfigKeyLogFormat, cmd.Flags().Lookup(flagReplacer.Replace(config.ConfigKeyLogFormat)))
+		viper.BindPFlag(config.ConfigKeyLogColor, cmd.Flags().Lookup(flagReplacer.Replace(config.ConfigKeyLogColor)))
+
+		config.InitZerolog()
+
+		b, err := json.Marshal(viper.AllSettings())
+		if err != nil {
+			return err
+		}
+		log.Debug().Str("config", string(b)).Msg("config loaded")
+
+		return nil
+	},
+	Run: func(*cobra.Command, []string) {
+		app := fx.New(
+			fx.Provide(
+				NewGinEngine,
+			),
+			fx.Invoke(
+				handler.RegisterLoginHandler,
+				handler.RegisterSessionHandler,
+				RunO11yHTTPServer,
+			),
+			fx.WithLogger(fxlogger.WithZerolog(log.Logger)),
+		)
+
+		app.Run()
+	},
+}
+
 func main() {
-	argoCDServer := resty.New().
-		SetBaseURL(os.Getenv("ARGO_CD_SERVER_URL"))
-	ghostServer := resty.New().
-		SetBaseURL(os.Getenv("GHOST_SERVER_URL"))
-	n8nServer := resty.New().
-		SetBaseURL(os.Getenv("N8N_SERVER_URL"))
+	rootCmd.PersistentFlags().String(flagReplacer.Replace(config.ConfigKeyLogLevel), "info", "Log level")
+	rootCmd.PersistentFlags().String(flagReplacer.Replace(config.ConfigKeyLogFormat), "console", "Log format")
+	rootCmd.PersistentFlags().Bool(flagReplacer.Replace(config.ConfigKeyLogColor), true, "Log color")
 
-	r := gin.Default()
-
-	r.GET("/", func(c *gin.Context) {
-		c.String(http.StatusOK, "OK")
-	})
-
-	session := r.Group("/session")
-	{
-		session.GET("/argo-cd", func(c *gin.Context) {
-			if token, err := c.Cookie("argocd.token"); err == nil {
-				res, err := argoCDServer.R().
-					SetCookie(&http.Cookie{
-						Name:  "argocd.token",
-						Value: token,
-					}).
-					Get("/api/v1/session/userinfo")
-				if err == nil && res.IsSuccess() && gjson.GetBytes(res.Body(), "loggedIn").Bool() {
-					c.JSON(http.StatusOK, gin.H{
-						"subject": gjson.GetBytes(res.Body(), "username").String(),
-						"extra":   gin.H{},
-					})
-					return
-				}
-			}
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
-		})
-
-		session.GET("/ghost", func(c *gin.Context) {
-			if session, err := c.Cookie("ghost-admin-api-session"); err == nil {
-				res, err := ghostServer.R().
-					SetHeader("X-Forwarded-Proto", "https").
-					SetCookie(&http.Cookie{
-						Name:  "ghost-admin-api-session",
-						Value: session,
-					}).
-					Get("/ghost/api/admin/users/me/")
-				if err == nil && res.IsSuccess() {
-					c.JSON(http.StatusOK, gin.H{
-						"subject": gjson.GetBytes(res.Body(), "users.0.id").String(),
-						"extra": gin.H{
-							"email": gjson.GetBytes(res.Body(), "users.0.email").String(),
-						},
-					})
-					return
-				}
-			}
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
-		})
-
-		session.GET("/n8n", func(c *gin.Context) {
-			if auth, err := c.Cookie("n8n-auth"); err == nil {
-				res, err := n8nServer.R().
-					SetHeader("Browser-Id", c.GetHeader("Browser-Id")).
-					SetCookie(&http.Cookie{
-						Name:  "n8n-auth",
-						Value: auth,
-					}).
-					Get("/rest/login")
-				if err == nil && res.IsSuccess() {
-					c.JSON(http.StatusOK, gin.H{
-						"subject": gjson.GetBytes(res.Body(), "data.id").String(),
-						"extra": gin.H{
-							"email": gjson.GetBytes(res.Body(), "data.email").String(),
-						},
-					})
-					return
-				}
-			}
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid session"})
-		})
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
-
-	login := r.Group("/login")
-	{
-		login.GET("/argo-cd", func(c *gin.Context) {
-			if token, err := c.Cookie("argocd.token"); err == nil {
-				res, err := argoCDServer.R().
-					SetCookie(&http.Cookie{
-						Name:  "argocd.token",
-						Value: token,
-					}).
-					Get("/api/v1/session/userinfo")
-				if err == nil && res.IsSuccess() && gjson.GetBytes(res.Body(), "loggedIn").Bool() {
-					c.Redirect(http.StatusFound, c.DefaultQuery("return_url", "/"))
-					return
-				}
-			}
-
-			res, err := argoCDServer.R().
-				SetBody(map[string]string{
-					"username": os.Getenv("ARGO_CD_USERNAME"),
-					"password": os.Getenv("ARGO_CD_PASSWORD"),
-				}).
-				Post("/api/v1/session")
-			if err != nil {
-				panic(err)
-			}
-			if res.IsError() {
-				panic(fmt.Sprintf("failed to login to argo-cd: %s %s", res.Status(), res))
-			}
-
-			c.Header("Set-Cookie", res.Header().Get("Set-Cookie"))
-			c.Redirect(http.StatusFound, c.DefaultQuery("return_url", "/"))
-		})
-
-		login.GET("/ghost", func(c *gin.Context) {
-			if session, err := c.Cookie("ghost-admin-api-session"); err == nil {
-				res, err := ghostServer.R().
-					SetHeader("X-Forwarded-Proto", "https").
-					SetCookie(&http.Cookie{
-						Name:  "ghost-admin-api-session",
-						Value: session,
-					}).
-					Get("/ghost/api/admin/users/me/")
-				if err == nil && res.IsSuccess() {
-					c.Redirect(http.StatusFound, c.DefaultQuery("return_url", "/ghost"))
-					return
-				}
-			}
-
-			res, err := ghostServer.R().
-				SetHeader("X-Forwarded-Proto", "https").
-				SetBody(map[string]string{
-					"username": os.Getenv("GHOST_USERNAME"),
-					"password": os.Getenv("GHOST_PASSWORD"),
-				}).
-				Post("/ghost/api/admin/session")
-			if err != nil {
-				panic(err)
-			}
-			if res.IsError() {
-				panic(fmt.Sprintf("failed to login to ghost: %s %s", res.Status(), res))
-			}
-
-			c.Header("Set-Cookie", res.Header().Get("Set-Cookie"))
-			c.Redirect(http.StatusFound, c.DefaultQuery("return_url", "/ghost"))
-		})
-
-		login.GET("/n8n", func(c *gin.Context) {
-			if auth, err := c.Cookie("n8n-auth"); err == nil {
-				res, err := n8nServer.R().
-					SetHeader("Browser-Id", c.GetHeader("Browser-Id")).
-					SetCookie(&http.Cookie{
-						Name:  "n8n-auth",
-						Value: auth,
-					}).
-					Get("/rest/login")
-				if err == nil && res.IsSuccess() {
-					c.Redirect(http.StatusFound, c.DefaultQuery("return_url", "/"))
-					return
-				}
-			}
-
-			res, err := n8nServer.R().
-				SetHeader("Browser-Id", c.GetHeader("Browser-Id")).
-				SetBody(map[string]string{
-					"email":    os.Getenv("N8N_USERNAME"),
-					"password": os.Getenv("N8N_PASSWORD"),
-				}).
-				Post("/rest/login")
-			if err != nil {
-				panic(err)
-			}
-			if res.IsError() {
-				panic(fmt.Sprintf("failed to login to n8n: %s %s", res.Status(), res))
-			}
-
-			c.Header("Set-Cookie", res.Header().Get("Set-Cookie"))
-			c.Redirect(http.StatusFound, c.DefaultQuery("return_url", "/"))
-		})
-	}
-
-	r.Run()
 }
