@@ -15,6 +15,13 @@ const (
 	ConfigKeyGinPort = "gin.port"
 	ConfigKeyGinHost = "gin.host"
 
+	ConfigKeyCacheRedisHost     = "cache.redis.host"
+	ConfigKeyCacheRedisPort     = "cache.redis.port"
+	ConfigKeyCacheRedisDB       = "cache.redis.db"
+	ConfigKeyCacheRedisPassword = "cache.redis.password"
+
+	ConfigKeyCacheTTL = "cache.ttl"
+
 	ConfigKeyArgoCDServerURL = "argo-cd.server-url"
 	ConfigKeyArgoCDUsername  = "argo-cd.username"
 	ConfigKeyArgoCDPassword  = "argo-cd.password"

@@ -9,6 +9,13 @@ gin:
   mode: debug
   host: 0.0.0.0
   port: 8080
+cache:
+  ttl: 15m
+  redis:
+    host: ""
+    port: 6379
+    password: ""
+    db: 0
 argo-cd:
   server-url: http://argocd.example.com
   username: admin
