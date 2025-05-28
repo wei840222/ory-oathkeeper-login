@@ -31,9 +31,9 @@ USER ${user}
 COPY --from=builder --chown=${uid}:${gid} /src/login-server /usr/bin/login-server
 COPY --from=builder --chown=${uid}:${gid} /src/config/config.yaml /etc/login-server/config.yaml
 
-ENV LOG_COLOR=false
+ENV LOG_COLOR=true
 ENV LOG_LEVEL=info
-ENV LOG_FORMAT=json
+ENV LOG_FORMAT=console
 ENV GIN_MODE=release
 
 EXPOSE 8080

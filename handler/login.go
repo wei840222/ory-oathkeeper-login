@@ -113,8 +113,8 @@ func (h *LoginHandler) N8N(c *gin.Context) {
 	res, err := h.client.R().
 		SetHeader("Browser-Id", c.GetHeader("Browser-Id")).
 		SetBody(map[string]string{
-			"email":    viper.GetString(config.ConfigKeyN8NUsername),
-			"password": viper.GetString(config.ConfigKeyN8NPassword),
+			"emailOrLdapLoginId": viper.GetString(config.ConfigKeyN8NUsername),
+			"password":           viper.GetString(config.ConfigKeyN8NPassword),
 		}).
 		Post(JoinURL(viper.GetString(config.ConfigKeyN8NServerURL), "/rest/login"))
 	if err != nil {
