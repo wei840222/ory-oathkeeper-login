@@ -13,17 +13,17 @@ import (
 	"github.com/redis/rueidis"
 	"github.com/spf13/viper"
 
-	"github.com/wei840222/login-server/config"
+	"github.com/wei840222/ory-oathkeeper-login/config"
 )
 
 func NewCache() (cache.CacheInterface[string], error) {
 	var s store.StoreInterface
 
-	if viper.GetString(config.ConfigKeyCacheRedisHost) != "" {
+	if viper.GetString(config.KeyCacheRedisHost) != "" {
 		rueidisClient, err := rueidis.NewClient(rueidis.ClientOption{
-			InitAddress: []string{fmt.Sprintf("%s:%d", viper.GetString(config.ConfigKeyCacheRedisHost), viper.GetInt(config.ConfigKeyCacheRedisPort))},
-			Password:    viper.GetString(config.ConfigKeyCacheRedisPassword),
-			SelectDB:    viper.GetInt(config.ConfigKeyCacheRedisDB),
+			InitAddress: []string{fmt.Sprintf("%s:%d", viper.GetString(config.KeyCacheRedisHost), viper.GetInt(config.KeyCacheRedisPort))},
+			Password:    viper.GetString(config.KeyCacheRedisPassword),
+			SelectDB:    viper.GetInt(config.KeyCacheRedisDB),
 		})
 		if err != nil {
 			return nil, err

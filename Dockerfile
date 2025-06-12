@@ -1,4 +1,4 @@
-FROM golang:1.23.4-bookworm AS builder
+FROM golang:1.24.4-bookworm AS builder
 
 WORKDIR /src
 
@@ -7,7 +7,7 @@ RUN go mod download
 
 COPY . ./
 
-RUN go build -v -o login-server
+RUN go build -v -o ory-oathkeeper-login
 
 FROM debian:bookworm-slim
 
@@ -16,8 +16,8 @@ RUN set -x && apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -
     ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
-ARG user=login-server
-ARG group=login-server
+ARG user=ory-oathkeeper-login
+ARG group=ory-oathkeeper-login
 ARG uid=10000
 ARG gid=10001
 
@@ -28,8 +28,8 @@ RUN groupadd -g ${gid} ${group} \
 
 USER ${user}
 
-COPY --from=builder --chown=${uid}:${gid} /src/login-server /usr/bin/login-server
-COPY --from=builder --chown=${uid}:${gid} /src/config/config.yaml /etc/login-server/config.yaml
+COPY --from=builder --chown=${uid}:${gid} /src/ory-oathkeeper-login /usr/bin/ory-oathkeeper-login
+COPY --from=builder --chown=${uid}:${gid} /src/config/config.yaml /etc/ory-oathkeeper-login/config.yaml
 
 ENV LOG_COLOR=true
 ENV LOG_LEVEL=info
@@ -38,4 +38,4 @@ ENV GIN_MODE=release
 
 EXPOSE 8080
 
-ENTRYPOINT ["login-server"]
+ENTRYPOINT ["ory-oathkeeper-login"]

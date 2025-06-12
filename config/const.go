@@ -1,37 +1,37 @@
 package config
 
 const (
-	AppName        = "login-server"
-	ConfigFileName = "config"
+	AppName  = "ory-oathkeeper-login"
+	FileName = "config"
 
-	ConfigKeyLogLevel  = "log.level"
-	ConfigKeyLogFormat = "log.format"
-	ConfigKeyLogColor  = "log.color"
+	KeyLogLevel  = "log.level"
+	KeyLogFormat = "log.format"
+	KeyLogColor  = "log.color"
 
-	ConfigKeyO11yHost = "o11y.host"
-	ConfigKeyO11yPort = "o11y.port"
+	KeyO11yHost = "o11y.host"
+	KeyO11yPort = "o11y.port"
 
-	ConfigKeyGinMode = "gin.mode"
-	ConfigKeyGinPort = "gin.port"
-	ConfigKeyGinHost = "gin.host"
+	KeyGinMode = "gin.mode"
+	KeyGinPort = "gin.port"
+	KeyGinHost = "gin.host"
 
-	ConfigKeyCacheRedisHost     = "cache.redis.host"
-	ConfigKeyCacheRedisPort     = "cache.redis.port"
-	ConfigKeyCacheRedisDB       = "cache.redis.db"
-	ConfigKeyCacheRedisPassword = "cache.redis.password"
+	KeyCacheRedisHost     = "cache.redis.host"
+	KeyCacheRedisPort     = "cache.redis.port"
+	KeyCacheRedisDB       = "cache.redis.db"
+	KeyCacheRedisPassword = "cache.redis.password"
 
-	ConfigKeyCacheTTL = "cache.ttl"
+	KeyCacheTTL = "cache.ttl"
 
-	ConfigKeyArgoCDServerURL = "argo-cd.server-url"
-	ConfigKeyArgoCDUsername  = "argo-cd.username"
-	ConfigKeyArgoCDPassword  = "argo-cd.password"
+	KeyArgoCDServerURL = "argo-cd.server-url"
+	KeyArgoCDUsername  = "argo-cd.username"
+	KeyArgoCDPassword  = "argo-cd.password"
 
-	ConfigKeyGhostServerURL = "ghost.server-url"
-	ConfigKeyGhostOriginURL = "ghost.origin-url"
-	ConfigKeyGhostUsername  = "ghost.username"
-	ConfigKeyGhostPassword  = "ghost.password"
+	KeyGhostServerURL = "ghost.server-url"
+	KeyGhostOriginURL = "ghost.origin-url"
+	KeyGhostUsername  = "ghost.username"
+	KeyGhostPassword  = "ghost.password"
 
-	ConfigKeyN8NServerURL = "n8n.server-url"
-	ConfigKeyN8NUsername  = "n8n.username"
-	ConfigKeyN8NPassword  = "n8n.password"
+	KeyN8NServerURL = "n8n.server-url"
+	KeyN8NUsername  = "n8n.username"
+	KeyN8NPassword  = "n8n.password"
 )

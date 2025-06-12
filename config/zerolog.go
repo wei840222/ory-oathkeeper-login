@@ -10,13 +10,13 @@ import (
 )
 
 func InitZerolog() {
-	l, _ := zerolog.ParseLevel(viper.GetString(ConfigKeyLogLevel))
+	l, _ := zerolog.ParseLevel(viper.GetString(KeyLogLevel))
 	if l == zerolog.NoLevel {
 		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	} else {
 		zerolog.SetGlobalLevel(l)
 	}
-	if viper.GetString(ConfigKeyLogFormat) != "json" {
-		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339, NoColor: !viper.GetBool(ConfigKeyLogColor)})
+	if viper.GetString(KeyLogFormat) != "json" {
+		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339, NoColor: !viper.GetBool(KeyLogColor)})
 	}
 }

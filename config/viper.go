@@ -8,7 +8,7 @@ import (
 )
 
 func InitViper() error {
-	viper.SetConfigName(ConfigFileName)
+	viper.SetConfigName(FileName)
 	viper.AddConfigPath(".")
 	viper.AddConfigPath("./config")
 	viper.AddConfigPath("/etc/" + AppName)

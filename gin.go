@@ -11,9 +11,11 @@ import (
 	"github.com/penglongli/gin-metrics/ginmetrics"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/fx"
 
-	"github.com/wei840222/login-server/config"
+	"github.com/wei840222/ory-oathkeeper-login/config"
 )
 
 func NewGinLogger(notLogged ...string) gin.HandlerFunc {
@@ -58,6 +60,7 @@ func NewGinLogger(notLogged ...string) gin.HandlerFunc {
 			"referer":       referer,
 			"responseBytes": dataLength,
 			"userAgent":     clientUserAgent,
+			"traceID":       trace.SpanContextFromContext(c).TraceID(),
 		}
 
 		msg := fmt.Sprintf("[GIN] %v | %d | %13v | %s | %s | %-7s %#v",
@@ -83,15 +86,15 @@ func NewGinLogger(notLogged ...string) gin.HandlerFunc {
 	}
 }
 
-func NewGinEngine(lc fx.Lifecycle) *gin.Engine {
-	if viper.GetString(config.ConfigKeyGinMode) == "release" {
+func NewGinEngine(lc fx.Lifecycle, tp trace.TracerProvider) *gin.Engine {
+	if viper.GetString(config.KeyGinMode) == "release" {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
 	e := gin.New()
 	e.ContextWithFallback = true
 
-	e.Use(NewGinLogger(), gin.Recovery())
+	e.Use(otelgin.Middleware(config.AppName, otelgin.WithTracerProvider(tp)), NewGinLogger(), gin.Recovery())
 
 	m := ginmetrics.GetMonitor()
 	m.SetSlowTime(1)
@@ -99,7 +102,7 @@ func NewGinEngine(lc fx.Lifecycle) *gin.Engine {
 	m.UseWithoutExposingEndpoint(e)
 
 	srv := &http.Server{
-		Addr:    fmt.Sprintf("%s:%d", viper.GetString(config.ConfigKeyGinHost), viper.GetInt(config.ConfigKeyGinPort)),
+		Addr:    fmt.Sprintf("%s:%d", viper.GetString(config.KeyGinHost), viper.GetInt(config.KeyGinPort)),
 		Handler: e,
 	}
 

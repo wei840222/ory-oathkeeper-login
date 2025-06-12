@@ -1,9 +1,11 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/http/httptrace"
 
 	"github.com/eko/gocache/lib/v4/cache"
 	"github.com/eko/gocache/lib/v4/store"
@@ -12,8 +14,10 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"github.com/tidwall/gjson"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
-	"github.com/wei840222/login-server/config"
+	"github.com/wei840222/ory-oathkeeper-login/config"
 )
 
 type OrySession struct {
@@ -47,12 +51,12 @@ func (h *SessionHandler) ArgoCD(c *gin.Context) {
 			log.Debug().Err(err).Msg("session cache miss")
 		}
 
-		res, err := h.client.R().
+		res, err := h.client.R().SetContext(c).
 			SetCookie(&http.Cookie{
 				Name:  "argocd.token",
 				Value: sessionKey,
 			}).
-			Get(JoinURL(viper.GetString(config.ConfigKeyArgoCDServerURL), "/api/v1/session/userinfo"))
+			Get(JoinURL(viper.GetString(config.KeyArgoCDServerURL), "/api/v1/session/userinfo"))
 
 		if err == nil && res.IsSuccess() && gjson.GetBytes(res.Body(), "loggedIn").Bool() {
 			var session OrySession
@@ -64,7 +68,7 @@ func (h *SessionHandler) ArgoCD(c *gin.Context) {
 				return
 			}
 
-			if err := h.cache.Set(c, fmt.Sprintf("argo-cd:%s", sessionKey), string(b), store.WithExpiration(viper.GetDuration(config.ConfigKeyCacheTTL))); err != nil {
+			if err := h.cache.Set(c, fmt.Sprintf("argo-cd:%s", sessionKey), string(b), store.WithExpiration(viper.GetDuration(config.KeyCacheTTL))); err != nil {
 				c.Error(err)
 				c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorRes{Error: err.Error()})
 				return
@@ -97,16 +101,16 @@ func (h *SessionHandler) Ghost(c *gin.Context) {
 			log.Debug().Err(err).Msg("session cache miss")
 		}
 
-		res, err := h.client.R().
+		res, err := h.client.R().SetContext(c).
 			SetHeaders(map[string]string{
 				"X-Forwarded-Proto": "https",
-				"Origin":            viper.GetString(config.ConfigKeyGhostOriginURL),
+				"Origin":            viper.GetString(config.KeyGhostOriginURL),
 			}).
 			SetCookie(&http.Cookie{
 				Name:  "ghost-admin-api-session",
 				Value: sessionKey,
 			}).
-			Get(JoinURL(viper.GetString(config.ConfigKeyGhostServerURL), "/ghost/api/admin/users/me/"))
+			Get(JoinURL(viper.GetString(config.KeyGhostServerURL), "/ghost/api/admin/users/me/"))
 
 		if err == nil && res.IsSuccess() {
 			var session OrySession
@@ -119,7 +123,7 @@ func (h *SessionHandler) Ghost(c *gin.Context) {
 				return
 			}
 
-			if err := h.cache.Set(c, fmt.Sprintf("ghost:%s", sessionKey), string(b), store.WithExpiration(viper.GetDuration(config.ConfigKeyCacheTTL))); err != nil {
+			if err := h.cache.Set(c, fmt.Sprintf("ghost:%s", sessionKey), string(b), store.WithExpiration(viper.GetDuration(config.KeyCacheTTL))); err != nil {
 				c.Error(err)
 				c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorRes{Error: err.Error()})
 				return
@@ -152,13 +156,13 @@ func (h *SessionHandler) N8N(c *gin.Context) {
 			log.Debug().Err(err).Msg("session cache miss")
 		}
 
-		res, err := h.client.R().
+		res, err := h.client.R().SetContext(c).
 			SetHeader("Browser-Id", c.GetHeader("Browser-Id")).
 			SetCookie(&http.Cookie{
 				Name:  "n8n-auth",
 				Value: sessionKey,
 			}).
-			Get(JoinURL(viper.GetString(config.ConfigKeyN8NServerURL), "/rest/login"))
+			Get(JoinURL(viper.GetString(config.KeyN8NServerURL), "/rest/login"))
 
 		if err == nil && res.IsSuccess() {
 			var session OrySession
@@ -171,7 +175,7 @@ func (h *SessionHandler) N8N(c *gin.Context) {
 				return
 			}
 
-			if err := h.cache.Set(c, fmt.Sprintf("n8n:%s", sessionKey), string(b), store.WithExpiration(viper.GetDuration(config.ConfigKeyCacheTTL))); err != nil {
+			if err := h.cache.Set(c, fmt.Sprintf("n8n:%s", sessionKey), string(b), store.WithExpiration(viper.GetDuration(config.KeyCacheTTL))); err != nil {
 				c.Error(err)
 				c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorRes{Error: err.Error()})
 				return
@@ -187,8 +191,15 @@ func (h *SessionHandler) N8N(c *gin.Context) {
 
 func RegisterSessionHandler(e *gin.Engine, c cache.CacheInterface[string]) {
 	h := &SessionHandler{
-		client: resty.New(),
-		cache:  c,
+		client: resty.NewWithClient(&http.Client{
+			Transport: otelhttp.NewTransport(
+				http.DefaultTransport,
+				otelhttp.WithClientTrace(func(ctx context.Context) *httptrace.ClientTrace {
+					return otelhttptrace.NewClientTrace(ctx)
+				}),
+			),
+		}),
+		cache: c,
 	}
 
 	session := e.Group("/session")

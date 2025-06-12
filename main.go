@@ -13,8 +13,8 @@ import (
 	_ "go.uber.org/automaxprocs"
 	"go.uber.org/fx"
 
-	"github.com/wei840222/login-server/config"
-	"github.com/wei840222/login-server/handler"
+	"github.com/wei840222/ory-oathkeeper-login/config"
+	"github.com/wei840222/ory-oathkeeper-login/handler"
 )
 
 var (
@@ -22,17 +22,17 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "login-server",
-	Short: "Login Server is an Ory Oathkeeper extension.",
-	Long:  `Login Server is an Ory Oathkeeper extension for login third party web apps.`,
+	Use:   "ory-oathkeeper-login",
+	Short: "Login Callback Server for Ory Oathkeeper.",
+	Long:  `Login Callback Server for Ory Oathkeeper for handling login callback to third party web apps.`,
 	PreRunE: func(cmd *cobra.Command, _ []string) error {
 		if err := config.InitViper(); err != nil {
 			return err
 		}
 
-		viper.BindPFlag(config.ConfigKeyLogLevel, cmd.Flags().Lookup(flagReplacer.Replace(config.ConfigKeyLogLevel)))
-		viper.BindPFlag(config.ConfigKeyLogFormat, cmd.Flags().Lookup(flagReplacer.Replace(config.ConfigKeyLogFormat)))
-		viper.BindPFlag(config.ConfigKeyLogColor, cmd.Flags().Lookup(flagReplacer.Replace(config.ConfigKeyLogColor)))
+		viper.BindPFlag(config.KeyLogLevel, cmd.Flags().Lookup(flagReplacer.Replace(config.KeyLogLevel)))
+		viper.BindPFlag(config.KeyLogFormat, cmd.Flags().Lookup(flagReplacer.Replace(config.KeyLogFormat)))
+		viper.BindPFlag(config.KeyLogColor, cmd.Flags().Lookup(flagReplacer.Replace(config.KeyLogColor)))
 
 		config.InitZerolog()
 
@@ -48,6 +48,7 @@ var rootCmd = &cobra.Command{
 		app := fx.New(
 			fx.Provide(
 				NewCache,
+				NewTracerProvider,
 				NewGinEngine,
 			),
 			fx.Invoke(
@@ -63,9 +64,9 @@ var rootCmd = &cobra.Command{
 }
 
 func main() {
-	rootCmd.PersistentFlags().String(flagReplacer.Replace(config.ConfigKeyLogLevel), "info", "Log level")
-	rootCmd.PersistentFlags().String(flagReplacer.Replace(config.ConfigKeyLogFormat), "console", "Log format")
-	rootCmd.PersistentFlags().Bool(flagReplacer.Replace(config.ConfigKeyLogColor), true, "Log color")
+	rootCmd.PersistentFlags().String(flagReplacer.Replace(config.KeyLogLevel), "info", "Log level")
+	rootCmd.PersistentFlags().String(flagReplacer.Replace(config.KeyLogFormat), "console", "Log format")
+	rootCmd.PersistentFlags().Bool(flagReplacer.Replace(config.KeyLogColor), true, "Log color")
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
