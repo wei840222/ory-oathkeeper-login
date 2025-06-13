@@ -9,6 +9,7 @@ require (
 	github.com/eko/gocache/store/rueidis/v4 v4.1.6
 	github.com/gin-gonic/gin v1.10.1
 	github.com/go-resty/resty/v2 v2.16.5
+	github.com/grafana/otel-profiling-go v0.5.1
 	github.com/grafana/pyroscope-go/godeltaprof v0.1.8
 	github.com/ipfans/fxlogger v0.2.0
 	github.com/penglongli/gin-metrics v0.1.13

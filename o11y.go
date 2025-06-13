@@ -7,6 +7,7 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 
+	otelpyroscope "github.com/grafana/otel-profiling-go"
 	_ "github.com/grafana/pyroscope-go/godeltaprof/http/pprof"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/viper"
@@ -44,9 +45,9 @@ func NewTracerProvider(lc fx.Lifecycle) (trace.TracerProvider, error) {
 		sdktrace.WithBatcher(exp),
 		sdktrace.WithResource(r),
 	)
-
+	ptp := otelpyroscope.NewTracerProvider(tp)
+	otel.SetTracerProvider(otelpyroscope.NewTracerProvider(ptp))
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
-	otel.SetTracerProvider(tp)
 
 	lc.Append(fx.Hook{
 		OnStop: func(ctx context.Context) error {
@@ -54,7 +55,7 @@ func NewTracerProvider(lc fx.Lifecycle) (trace.TracerProvider, error) {
 		},
 	})
 
-	return tp, nil
+	return ptp, nil
 }
 
 func RunO11yHTTPServer(lc fx.Lifecycle) {
