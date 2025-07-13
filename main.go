@@ -30,7 +30,7 @@ var rootCmd = &cobra.Command{
 		config.InitCobraPFlag(cmd)
 		config.InitZerolog()
 
-		logger.Info().Any("config", viper.AllSettings()).Msg("config loaded")
+		logger.Debug().Any("config", viper.AllSettings()).Msg("config loaded")
 
 		return nil
 	},
