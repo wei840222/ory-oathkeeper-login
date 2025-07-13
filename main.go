@@ -1,10 +1,8 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/ipfans/fxlogger"
 	"github.com/rs/zerolog/log"
@@ -17,30 +15,21 @@ import (
 	"github.com/wei840222/ory-oathkeeper-login/handler"
 )
 
-var (
-	flagReplacer = strings.NewReplacer(".", "-")
-)
-
 var rootCmd = &cobra.Command{
 	Use:   "ory-oathkeeper-login",
 	Short: "Login Callback Server for Ory Oathkeeper.",
 	Long:  `Login Callback Server for Ory Oathkeeper for handling login callback to third party web apps.`,
 	PreRunE: func(cmd *cobra.Command, _ []string) error {
+		logger := log.With().Str("logger", "cobra").Logger()
+
 		if err := config.InitViper(); err != nil {
 			return err
 		}
 
-		viper.BindPFlag(config.KeyLogLevel, cmd.Flags().Lookup(flagReplacer.Replace(config.KeyLogLevel)))
-		viper.BindPFlag(config.KeyLogFormat, cmd.Flags().Lookup(flagReplacer.Replace(config.KeyLogFormat)))
-		viper.BindPFlag(config.KeyLogColor, cmd.Flags().Lookup(flagReplacer.Replace(config.KeyLogColor)))
-
+		config.InitCobraPFlag(cmd)
 		config.InitZerolog()
 
-		b, err := json.Marshal(viper.AllSettings())
-		if err != nil {
-			return err
-		}
-		log.Debug().Str("config", string(b)).Msg("config loaded")
+		logger.Info().Any("config", viper.AllSettings()).Msg("config loaded")
 
 		return nil
 	},
@@ -48,6 +37,7 @@ var rootCmd = &cobra.Command{
 		app := fx.New(
 			fx.Provide(
 				NewCache,
+				NewMeterProvider,
 				NewTracerProvider,
 				NewGinEngine,
 			),
@@ -64,9 +54,17 @@ var rootCmd = &cobra.Command{
 }
 
 func main() {
-	rootCmd.PersistentFlags().String(flagReplacer.Replace(config.KeyLogLevel), "info", "Log level")
-	rootCmd.PersistentFlags().String(flagReplacer.Replace(config.KeyLogFormat), "console", "Log format")
-	rootCmd.PersistentFlags().Bool(flagReplacer.Replace(config.KeyLogColor), true, "Log color")
+	rootCmd.PersistentFlags().String(config.FlagReplacer.Replace(config.KeyLogLevel), "info", "Log level")
+	rootCmd.PersistentFlags().String(config.FlagReplacer.Replace(config.KeyLogFormat), "console", "Log format")
+	rootCmd.PersistentFlags().Bool(config.FlagReplacer.Replace(config.KeyLogColor), true, "Log color")
+
+	rootCmd.PersistentFlags().String(config.FlagReplacer.Replace(config.KeyO11yHost), "0.0.0.0", "Observability server host")
+	rootCmd.PersistentFlags().Int(config.FlagReplacer.Replace(config.KeyO11yPort), 9090, "Observability server port")
+
+	rootCmd.PersistentFlags().String(config.FlagReplacer.Replace(config.KeyGinMode), "debug", "Gin mode")
+
+	rootCmd.PersistentFlags().String(config.FlagReplacer.Replace(config.KeyHTTPHost), "0.0.0.0", "HTTP server host")
+	rootCmd.PersistentFlags().Int(config.FlagReplacer.Replace(config.KeyHTTPPort), 8080, "HTTP server port")
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)

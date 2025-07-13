@@ -12,8 +12,9 @@ const (
 	KeyO11yPort = "o11y.port"
 
 	KeyGinMode = "gin.mode"
-	KeyGinPort = "gin.port"
-	KeyGinHost = "gin.host"
+
+	KeyHTTPPort = "http.port"
+	KeyHTTPHost = "http.host"
 
 	KeyCacheRedisHost     = "cache.redis.host"
 	KeyCacheRedisPort     = "cache.redis.port"
@@ -22,16 +23,20 @@ const (
 
 	KeyCacheTTL = "cache.ttl"
 
-	KeyArgoCDServerURL = "argo-cd.server-url"
-	KeyArgoCDUsername  = "argo-cd.username"
-	KeyArgoCDPassword  = "argo-cd.password"
+	KeyArgoCDServerURL = "argo_cd.server_url"
+	KeyArgoCDUsername  = "argo_cd.username"
+	KeyArgoCDPassword  = "argo_cd.password"
 
-	KeyGhostServerURL = "ghost.server-url"
-	KeyGhostOriginURL = "ghost.origin-url"
+	KeyGhostServerURL = "ghost.server_url"
+	KeyGhostOriginURL = "ghost.origin_url"
 	KeyGhostUsername  = "ghost.username"
 	KeyGhostPassword  = "ghost.password"
 
-	KeyN8NServerURL = "n8n.server-url"
+	KeyN8NServerURL = "n8n.server_url"
 	KeyN8NUsername  = "n8n.username"
 	KeyN8NPassword  = "n8n.password"
+
+	KeyNocoDBServerURL = "nocodb.server_url"
+	KeyNocoDBUsername  = "nocodb.username"
+	KeyNocoDBPassword  = "nocodb.password"
 )

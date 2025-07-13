@@ -12,6 +12,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/fx"
 
@@ -27,6 +28,8 @@ func NewGinLogger(notLogged ...string) gin.HandlerFunc {
 			skip[p] = struct{}{}
 		}
 	}
+
+	logger := log.With().Str("logger", "gin").Logger()
 
 	return func(c *gin.Context) {
 		// other handler can change c.Path so:
@@ -74,22 +77,20 @@ func NewGinLogger(notLogged ...string) gin.HandlerFunc {
 		)
 
 		if len(c.Errors) > 0 {
-			log.Error().Fields(entry).Msg(strings.TrimSpace(c.Errors.ByType(gin.ErrorTypePrivate).String()))
+			logger.Error().Fields(entry).Msg(strings.TrimSpace(c.Errors.ByType(gin.ErrorTypePrivate).String()))
 		}
 		if status >= http.StatusInternalServerError {
-			log.Error().Fields(entry).Msg(msg)
+			logger.Error().Fields(entry).Msg(msg)
 		} else if status >= http.StatusBadRequest {
-			log.Warn().Fields(entry).Msg(msg)
+			logger.Warn().Fields(entry).Msg(msg)
 		} else {
-			log.Info().Fields(entry).Msg(msg)
+			logger.Info().Fields(entry).Msg(msg)
 		}
 	}
 }
 
-func NewGinEngine(lc fx.Lifecycle, tp trace.TracerProvider) *gin.Engine {
-	if viper.GetString(config.KeyGinMode) == "release" {
-		gin.SetMode(gin.ReleaseMode)
-	}
+func NewGinEngine(lc fx.Lifecycle, tp trace.TracerProvider, _ metric.MeterProvider) *gin.Engine {
+	gin.SetMode(viper.GetString(config.KeyGinMode))
 
 	e := gin.New()
 	e.ContextWithFallback = true
@@ -102,7 +103,7 @@ func NewGinEngine(lc fx.Lifecycle, tp trace.TracerProvider) *gin.Engine {
 	m.UseWithoutExposingEndpoint(e)
 
 	srv := &http.Server{
-		Addr:    fmt.Sprintf("%s:%d", viper.GetString(config.KeyGinHost), viper.GetInt(config.KeyGinPort)),
+		Addr:    fmt.Sprintf("%s:%d", viper.GetString(config.KeyHTTPHost), viper.GetInt(config.KeyHTTPPort)),
 		Handler: e,
 	}
 

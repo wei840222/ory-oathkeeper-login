@@ -11,6 +11,7 @@ import (
 	"github.com/eko/gocache/lib/v4/store"
 	"github.com/gin-gonic/gin"
 	"github.com/go-resty/resty/v2"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"github.com/tidwall/gjson"
@@ -28,6 +29,7 @@ type OrySession struct {
 }
 
 type SessionHandler struct {
+	logger zerolog.Logger
 	client *resty.Client
 	cache  cache.CacheInterface[string]
 }
@@ -36,19 +38,19 @@ func (h *SessionHandler) ArgoCD(c *gin.Context) {
 	if sessionKey, err := c.Cookie("argocd.token"); err == nil {
 		s, err := h.cache.Get(c, fmt.Sprintf("argo-cd:%s", sessionKey))
 		if err == nil {
-			log.Debug().Str("session", s).Msg("session cache hit")
+			h.logger.Debug().Str("session", s).Msg("session cache hit")
 			var session OrySession
 			if err := json.Unmarshal([]byte(s), &session); err == nil {
 				c.JSON(http.StatusOK, session)
 				return
 			} else {
-				log.Warn().Err(err).Msg("session cache hit but unmarshal failed")
+				h.logger.Warn().Err(err).Msg("session cache hit but unmarshal failed")
 				if err := h.cache.Delete(c, fmt.Sprintf("argo-cd:%s", sessionKey)); err != nil {
-					log.Warn().Err(err).Msg("session cache delete failed")
+					h.logger.Warn().Err(err).Msg("session cache delete failed")
 				}
 			}
 		} else {
-			log.Debug().Err(err).Msg("session cache miss")
+			h.logger.Debug().Err(err).Msg("session cache miss")
 		}
 
 		res, err := h.client.R().SetContext(c).
@@ -86,19 +88,19 @@ func (h *SessionHandler) Ghost(c *gin.Context) {
 	if sessionKey, err := c.Cookie("ghost-admin-api-session"); err == nil {
 		s, err := h.cache.Get(c, fmt.Sprintf("ghost:%s", sessionKey))
 		if err == nil {
-			log.Debug().Str("session", s).Msg("session cache hit")
+			h.logger.Debug().Str("session", s).Msg("session cache hit")
 			var session OrySession
 			if err := json.Unmarshal([]byte(s), &session); err == nil {
 				c.JSON(http.StatusOK, session)
 				return
 			} else {
-				log.Warn().Err(err).Msg("session cache hit but unmarshal failed")
+				h.logger.Warn().Err(err).Msg("session cache hit but unmarshal failed")
 				if err := h.cache.Delete(c, fmt.Sprintf("ghost:%s", sessionKey)); err != nil {
-					log.Warn().Err(err).Msg("session cache delete failed")
+					h.logger.Warn().Err(err).Msg("session cache delete failed")
 				}
 			}
 		} else {
-			log.Debug().Err(err).Msg("session cache miss")
+			h.logger.Debug().Err(err).Msg("session cache miss")
 		}
 
 		res, err := h.client.R().SetContext(c).
@@ -141,19 +143,19 @@ func (h *SessionHandler) N8N(c *gin.Context) {
 	if sessionKey, err := c.Cookie("n8n-auth"); err == nil {
 		s, err := h.cache.Get(c, fmt.Sprintf("n8n:%s", sessionKey))
 		if err == nil {
-			log.Debug().Str("session", s).Msg("session cache hit")
+			h.logger.Debug().Str("session", s).Msg("session cache hit")
 			var session OrySession
 			if err := json.Unmarshal([]byte(s), &session); err == nil {
 				c.JSON(http.StatusOK, session)
 				return
 			} else {
-				log.Warn().Err(err).Msg("session cache hit but unmarshal failed")
+				h.logger.Warn().Err(err).Msg("session cache hit but unmarshal failed")
 				if err := h.cache.Delete(c, fmt.Sprintf("n8n:%s", sessionKey)); err != nil {
-					log.Warn().Err(err).Msg("session cache delete failed")
+					h.logger.Warn().Err(err).Msg("session cache delete failed")
 				}
 			}
 		} else {
-			log.Debug().Err(err).Msg("session cache miss")
+			h.logger.Debug().Err(err).Msg("session cache miss")
 		}
 
 		res, err := h.client.R().SetContext(c).
@@ -191,6 +193,7 @@ func (h *SessionHandler) N8N(c *gin.Context) {
 
 func RegisterSessionHandler(e *gin.Engine, c cache.CacheInterface[string]) {
 	h := &SessionHandler{
+		logger: log.With().Str("logger", "sessionHandler").Logger(),
 		client: resty.NewWithClient(&http.Client{
 			Transport: otelhttp.NewTransport(
 				http.DefaultTransport,

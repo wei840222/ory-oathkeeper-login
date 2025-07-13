@@ -16,16 +16,16 @@ cache:
     port: 6379
     password: ""
     db: 0
-argo-cd:
-  server-url: http://argocd.example.com
+argo_cd:
+  server_url: http://argocd.example.com
   username: admin
   password: password
 ghost:
-  server-url: http://ghost.example.com
-  origin-url: https://ghost.example.com
+  server_url: http://ghost.example.com
+  origin_url: https://ghost.example.com
   username: admin
   password: password
 n8n:
-  server-url: http://n8n.example.com
+  server_url: http://n8n.example.com
   username: admin
   password: password

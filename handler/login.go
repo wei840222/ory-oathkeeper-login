@@ -137,6 +137,43 @@ func (h *LoginHandler) N8N(c *gin.Context) {
 	c.Redirect(http.StatusFound, c.DefaultQuery("return_url", "/"))
 }
 
+func (h *LoginHandler) NocoDB(c *gin.Context) {
+	if token, err := c.Cookie("refresh_token"); err == nil {
+		res, err := h.client.R().SetContext(c).
+			SetCookie(&http.Cookie{
+				Name:  "refresh_token",
+				Value: token,
+			}).
+			Post(JoinURL(viper.GetString(config.KeyNocoDBServerURL), "/auth/token/refresh"))
+		if err == nil && res.IsSuccess() {
+			c.Header("Set-Cookie", res.Header().Get("Set-Cookie"))
+			c.Redirect(http.StatusFound, c.DefaultQuery("return_url", "/"))
+			return
+		}
+	}
+
+	res, err := h.client.R().SetContext(c).
+		SetBody(map[string]string{
+			"email":    viper.GetString(config.KeyNocoDBUsername),
+			"password": viper.GetString(config.KeyNocoDBPassword),
+		}).
+		Post(JoinURL(viper.GetString(config.KeyNocoDBServerURL), "/auth/user/signin"))
+	if err != nil {
+		c.Error(err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorRes{Error: err.Error()})
+		return
+	}
+	if res.IsError() {
+		err := fmt.Errorf("failed to login to nocodb: %s %s", res.Status(), res)
+		c.Error(err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorRes{Error: err.Error()})
+		return
+	}
+
+	c.Header("Set-Cookie", res.Header().Get("Set-Cookie"))
+	c.Redirect(http.StatusFound, c.DefaultQuery("return_url", "/"))
+}
+
 func RegisterLoginHandler(e *gin.Engine) {
 	h := &LoginHandler{
 		client: resty.NewWithClient(&http.Client{
@@ -154,5 +191,6 @@ func RegisterLoginHandler(e *gin.Engine) {
 		login.GET("/argo-cd", h.ArgoCD)
 		login.GET("/ghost", h.Ghost)
 		login.GET("/n8n", h.N8N)
+		login.GET("/nocodb", h.NocoDB)
 	}
 }
