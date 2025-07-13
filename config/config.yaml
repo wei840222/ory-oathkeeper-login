@@ -1,31 +1,50 @@
-log:
-  level: debug
-  format: console
-  color: true
-o11y:
-  host: 0.0.0.0
-  port: 9090
-gin:
-  mode: debug
-  host: 0.0.0.0
-  port: 8080
-cache:
-  ttl: 15m
-  redis:
-    host: ""
-    port: 6379
-    password: ""
-    db: 0
+## Default configuration value for the application.
+# Uncomment and modify the following lines to customize the configuration.
+
+# log:
+#   level: info
+#   format: console
+#   color: true
+
+# o11y:
+#   host: 0.0.0.0
+#   port: 9090
+
+# gin:
+#   mode: debug
+
+# http:
+#   host: 0.0.0.0
+#   port: 8080
+
+# cache:
+#   ttl: 15m
+#   redis:
+#     host: ""
+#     port: 6379
+#     password: ""
+#     db: 0
+
+## Configuration for various services used in the application.
+# Modify the following lines to set up the services or using environment variables to override these values.
+
 argo_cd:
   server_url: http://argocd.example.com
   username: admin
   password: password
+
 ghost:
   server_url: http://ghost.example.com
   origin_url: https://ghost.example.com
   username: admin
   password: password
+
 n8n:
   server_url: http://n8n.example.com
+  username: admin
+  password: password
+
+nocodb:
+  server_url: http://nocodb.example.com
   username: admin
   password: password

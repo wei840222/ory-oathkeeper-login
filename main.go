@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/ipfans/fxlogger"
 	"github.com/rs/zerolog/log"
@@ -65,6 +66,12 @@ func main() {
 
 	rootCmd.PersistentFlags().String(config.FlagReplacer.Replace(config.KeyHTTPHost), "0.0.0.0", "HTTP server host")
 	rootCmd.PersistentFlags().Int(config.FlagReplacer.Replace(config.KeyHTTPPort), 8080, "HTTP server port")
+
+	rootCmd.PersistentFlags().Duration(config.FlagReplacer.Replace(config.KeyCacheTTL), 15*time.Minute, "Cache TTL")
+	rootCmd.PersistentFlags().String(config.FlagReplacer.Replace(config.KeyCacheRedisHost), "localhost", "Cache Redis host")
+	rootCmd.PersistentFlags().Int(config.FlagReplacer.Replace(config.KeyCacheRedisPort), 6379, "Cache Redis port")
+	rootCmd.PersistentFlags().String(config.FlagReplacer.Replace(config.KeyCacheRedisPassword), "", "Cache Redis password")
+	rootCmd.PersistentFlags().Int(config.FlagReplacer.Replace(config.KeyCacheRedisDB), 0, "Cache Redis database")
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)

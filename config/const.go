@@ -16,12 +16,12 @@ const (
 	KeyHTTPPort = "http.port"
 	KeyHTTPHost = "http.host"
 
+	KeyCacheTTL = "cache.ttl"
+
 	KeyCacheRedisHost     = "cache.redis.host"
 	KeyCacheRedisPort     = "cache.redis.port"
 	KeyCacheRedisDB       = "cache.redis.db"
 	KeyCacheRedisPassword = "cache.redis.password"
-
-	KeyCacheTTL = "cache.ttl"
 
 	KeyArgoCDServerURL = "argo_cd.server_url"
 	KeyArgoCDUsername  = "argo_cd.username"
