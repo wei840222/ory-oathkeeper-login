@@ -68,7 +68,7 @@ func main() {
 	rootCmd.PersistentFlags().Int(config.FlagReplacer.Replace(config.KeyHTTPPort), 8080, "HTTP server port")
 
 	rootCmd.PersistentFlags().Duration(config.FlagReplacer.Replace(config.KeyCacheTTL), 15*time.Minute, "Cache TTL")
-	rootCmd.PersistentFlags().String(config.FlagReplacer.Replace(config.KeyCacheRedisHost), "localhost", "Cache Redis host")
+	rootCmd.PersistentFlags().String(config.FlagReplacer.Replace(config.KeyCacheRedisHost), "", "Cache Redis host")
 	rootCmd.PersistentFlags().Int(config.FlagReplacer.Replace(config.KeyCacheRedisPort), 6379, "Cache Redis port")
 	rootCmd.PersistentFlags().String(config.FlagReplacer.Replace(config.KeyCacheRedisPassword), "", "Cache Redis password")
 	rootCmd.PersistentFlags().Int(config.FlagReplacer.Replace(config.KeyCacheRedisDB), 0, "Cache Redis database")
