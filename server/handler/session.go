@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
 	"github.com/wei840222/ory-oathkeeper-login/config"
+	"github.com/wei840222/ory-oathkeeper-login/server"
 )
 
 type OrySession struct {
@@ -66,13 +67,13 @@ func (h *SessionHandler) ArgoCD(c *gin.Context) {
 			b, err := json.Marshal(session)
 			if err != nil {
 				c.Error(err)
-				c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorRes{Error: err.Error()})
+				c.AbortWithStatusJSON(http.StatusInternalServerError, server.ErrorRes{Error: err.Error()})
 				return
 			}
 
 			if err := h.cache.Set(c, fmt.Sprintf("argo-cd:%s", sessionKey), string(b), store.WithExpiration(viper.GetDuration(config.KeyCacheTTL))); err != nil {
 				c.Error(err)
-				c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorRes{Error: err.Error()})
+				c.AbortWithStatusJSON(http.StatusInternalServerError, server.ErrorRes{Error: err.Error()})
 				return
 			}
 
@@ -81,7 +82,7 @@ func (h *SessionHandler) ArgoCD(c *gin.Context) {
 		}
 	}
 
-	c.JSON(http.StatusUnauthorized, ErrorRes{Error: "invalid session"})
+	c.JSON(http.StatusUnauthorized, server.ErrorRes{Error: server.ErrInvalidSession.Error()})
 }
 
 func (h *SessionHandler) Ghost(c *gin.Context) {
@@ -121,13 +122,13 @@ func (h *SessionHandler) Ghost(c *gin.Context) {
 			b, err := json.Marshal(session)
 			if err != nil {
 				c.Error(err)
-				c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorRes{Error: err.Error()})
+				c.AbortWithStatusJSON(http.StatusInternalServerError, server.ErrorRes{Error: err.Error()})
 				return
 			}
 
 			if err := h.cache.Set(c, fmt.Sprintf("ghost:%s", sessionKey), string(b), store.WithExpiration(viper.GetDuration(config.KeyCacheTTL))); err != nil {
 				c.Error(err)
-				c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorRes{Error: err.Error()})
+				c.AbortWithStatusJSON(http.StatusInternalServerError, server.ErrorRes{Error: err.Error()})
 				return
 			}
 
@@ -136,7 +137,7 @@ func (h *SessionHandler) Ghost(c *gin.Context) {
 		}
 	}
 
-	c.JSON(http.StatusUnauthorized, ErrorRes{Error: "invalid session"})
+	c.JSON(http.StatusUnauthorized, server.ErrorRes{Error: server.ErrInvalidSession.Error()})
 }
 
 func (h *SessionHandler) N8N(c *gin.Context) {
@@ -173,13 +174,13 @@ func (h *SessionHandler) N8N(c *gin.Context) {
 			b, err := json.Marshal(session)
 			if err != nil {
 				c.Error(err)
-				c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorRes{Error: err.Error()})
+				c.AbortWithStatusJSON(http.StatusInternalServerError, server.ErrorRes{Error: err.Error()})
 				return
 			}
 
 			if err := h.cache.Set(c, fmt.Sprintf("n8n:%s", sessionKey), string(b), store.WithExpiration(viper.GetDuration(config.KeyCacheTTL))); err != nil {
 				c.Error(err)
-				c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorRes{Error: err.Error()})
+				c.AbortWithStatusJSON(http.StatusInternalServerError, server.ErrorRes{Error: err.Error()})
 				return
 			}
 
@@ -188,7 +189,7 @@ func (h *SessionHandler) N8N(c *gin.Context) {
 		}
 	}
 
-	c.JSON(http.StatusUnauthorized, ErrorRes{Error: "invalid session"})
+	c.JSON(http.StatusUnauthorized, server.ErrorRes{Error: server.ErrInvalidSession.Error()})
 }
 
 func RegisterSessionHandler(e *gin.Engine, c cache.CacheInterface[string]) {

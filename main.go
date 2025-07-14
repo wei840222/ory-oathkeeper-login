@@ -13,7 +13,8 @@ import (
 	"go.uber.org/fx"
 
 	"github.com/wei840222/ory-oathkeeper-login/config"
-	"github.com/wei840222/ory-oathkeeper-login/handler"
+	"github.com/wei840222/ory-oathkeeper-login/server"
+	"github.com/wei840222/ory-oathkeeper-login/server/handler"
 )
 
 var rootCmd = &cobra.Command{
@@ -38,14 +39,14 @@ var rootCmd = &cobra.Command{
 		app := fx.New(
 			fx.Provide(
 				NewCache,
-				NewMeterProvider,
-				NewTracerProvider,
-				NewGinEngine,
+				server.NewMeterProvider,
+				server.NewTracerProvider,
+				server.NewGinEngine,
 			),
 			fx.Invoke(
 				handler.RegisterLoginHandler,
 				handler.RegisterSessionHandler,
-				RunO11yHTTPServer,
+				server.RunO11yHTTPServer,
 			),
 			fx.WithLogger(fxlogger.WithZerolog(log.Logger)),
 		)

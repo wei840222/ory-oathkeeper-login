@@ -13,6 +13,8 @@ import (
 	"github.com/wei840222/ory-oathkeeper-login/config"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+
+	"github.com/wei840222/ory-oathkeeper-login/server"
 )
 
 type LoginHandler struct {
@@ -41,13 +43,13 @@ func (h *LoginHandler) ArgoCD(c *gin.Context) {
 		Post(JoinURL(viper.GetString(config.KeyArgoCDServerURL), "/api/v1/session"))
 	if err != nil {
 		c.Error(err)
-		c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorRes{Error: err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, server.ErrorRes{Error: err.Error()})
 		return
 	}
 	if res.IsError() {
 		err := fmt.Errorf("failed to login to argo-cd: %s %s", res.Status(), res)
 		c.Error(err)
-		c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorRes{Error: err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, server.ErrorRes{Error: err.Error()})
 		return
 	}
 
@@ -85,13 +87,13 @@ func (h *LoginHandler) Ghost(c *gin.Context) {
 		Post(JoinURL(viper.GetString(config.KeyGhostServerURL), "/ghost/api/admin/session"))
 	if err != nil {
 		c.Error(err)
-		c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorRes{Error: err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, server.ErrorRes{Error: err.Error()})
 		return
 	}
 	if res.IsError() {
 		err := fmt.Errorf("failed to login to ghost: %s %s", res.Status(), res)
 		c.Error(err)
-		c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorRes{Error: err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, server.ErrorRes{Error: err.Error()})
 		return
 	}
 
@@ -123,13 +125,13 @@ func (h *LoginHandler) N8N(c *gin.Context) {
 		Post(JoinURL(viper.GetString(config.KeyN8NServerURL), "/rest/login"))
 	if err != nil {
 		c.Error(err)
-		c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorRes{Error: err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, server.ErrorRes{Error: err.Error()})
 		return
 	}
 	if res.IsError() {
 		err := fmt.Errorf("failed to login to n8n: %s %s", res.Status(), res)
 		c.Error(err)
-		c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorRes{Error: err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, server.ErrorRes{Error: err.Error()})
 		return
 	}
 
@@ -160,13 +162,13 @@ func (h *LoginHandler) NocoDB(c *gin.Context) {
 		Post(JoinURL(viper.GetString(config.KeyNocoDBServerURL), "/auth/user/signin"))
 	if err != nil {
 		c.Error(err)
-		c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorRes{Error: err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, server.ErrorRes{Error: err.Error()})
 		return
 	}
 	if res.IsError() {
 		err := fmt.Errorf("failed to login to nocodb: %s %s", res.Status(), res)
 		c.Error(err)
-		c.AbortWithStatusJSON(http.StatusInternalServerError, ErrorRes{Error: err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, server.ErrorRes{Error: err.Error()})
 		return
 	}
 
