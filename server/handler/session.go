@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -284,11 +285,14 @@ func (h *SessionHandler) NocoDB(c *gin.Context) {
 }
 
 func RegisterSessionHandler(e *gin.Engine, c cache.CacheInterface[string]) {
+	customTransport := http.DefaultTransport.(*http.Transport).Clone()
+	customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+
 	h := &SessionHandler{
 		logger: log.With().Str("logger", "sessionHandler").Logger(),
 		client: resty.NewWithClient(&http.Client{
 			Transport: otelhttp.NewTransport(
-				http.DefaultTransport,
+				customTransport,
 				otelhttp.WithClientTrace(func(ctx context.Context) *httptrace.ClientTrace {
 					return otelhttptrace.NewClientTrace(ctx)
 				}),
