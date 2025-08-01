@@ -21,6 +21,44 @@ type LoginHandler struct {
 	client *resty.Client
 }
 
+func (h *LoginHandler) Proxmox(c *gin.Context) {
+	if ticket, err := c.Cookie("PVEAuthCookie"); err == nil {
+		res, err := h.client.R().SetContext(c).
+			SetCookie(&http.Cookie{
+				Name:  "PVEAuthCookie",
+				Value: ticket,
+			}).
+			Get(JoinURL(viper.GetString(config.KeyProxmoxServerURL), "/api2/extjs/version"))
+		if err == nil && res.IsSuccess() {
+			c.Redirect(http.StatusFound, c.DefaultQuery("return_url", "/"))
+			return
+		}
+	}
+
+	res, err := h.client.R().SetContext(c).
+		SetFormData(map[string]string{
+			"realm":      "pam",
+			"new-format": "1",
+			"username":   viper.GetString(config.KeyProxmoxUsername),
+			"password":   viper.GetString(config.KeyProxmoxPassword),
+		}).
+		Post(JoinURL(viper.GetString(config.KeyProxmoxServerURL), "/api2/extjs/access/ticket"))
+	if err != nil {
+		c.Error(err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, server.ErrorRes{Error: err.Error()})
+		return
+	}
+	if res.IsError() {
+		err := fmt.Errorf("failed to login to proxmox: %s %s", res.Status(), res)
+		c.Error(err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, server.ErrorRes{Error: err.Error()})
+		return
+	}
+
+	c.SetCookie("PVEAuthCookie", gjson.GetBytes(res.Body(), "data.ticket").String(), 0, "/", c.Request.Host, true, false)
+	c.Redirect(http.StatusFound, c.DefaultQuery("return_url", "/"))
+}
+
 func (h *LoginHandler) ArgoCD(c *gin.Context) {
 	if token, err := c.Cookie("argocd.token"); err == nil {
 		res, err := h.client.R().SetContext(c).
@@ -190,6 +228,7 @@ func RegisterLoginHandler(e *gin.Engine) {
 
 	login := e.Group("/login")
 	{
+		login.GET("/proxmox", h.Proxmox)
 		login.GET("/argo-cd", h.ArgoCD)
 		login.GET("/ghost", h.Ghost)
 		login.GET("/n8n", h.N8N)

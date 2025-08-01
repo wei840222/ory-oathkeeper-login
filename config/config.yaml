@@ -28,6 +28,11 @@
 ## Configuration for various services used in the application.
 # Modify the following lines to set up the services or using environment variables to override these values.
 
+proxmox:
+  server_url: http://proxmox.example.com
+  username: admin
+  password: password
+
 argo_cd:
   server_url: http://argocd.example.com
   username: admin

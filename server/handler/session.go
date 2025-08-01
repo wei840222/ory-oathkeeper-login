@@ -35,6 +35,56 @@ type SessionHandler struct {
 	cache  cache.CacheInterface[string]
 }
 
+func (h *SessionHandler) Proxmox(c *gin.Context) {
+	if sessionKey, err := c.Cookie("PVEAuthCookie"); err == nil {
+		s, err := h.cache.Get(c, fmt.Sprintf("proxmox:%s", sessionKey))
+		if err == nil {
+			h.logger.Debug().Str("session", s).Msg("session cache hit")
+			var session OrySession
+			if err := json.Unmarshal([]byte(s), &session); err == nil {
+				c.JSON(http.StatusOK, session)
+				return
+			} else {
+				h.logger.Warn().Err(err).Msg("session cache hit but unmarshal failed")
+				if err := h.cache.Delete(c, fmt.Sprintf("proxmox:%s", sessionKey)); err != nil {
+					h.logger.Warn().Err(err).Msg("session cache delete failed")
+				}
+			}
+		} else {
+			h.logger.Debug().Err(err).Msg("session cache miss")
+		}
+
+		res, err := h.client.R().SetContext(c).
+			SetCookie(&http.Cookie{
+				Name:  "PVEAuthCookie",
+				Value: sessionKey,
+			}).
+			Get(JoinURL(viper.GetString(config.KeyProxmoxServerURL), "/api2/extjs/version"))
+
+		if err == nil && res.IsSuccess() {
+			var session OrySession
+			session.Subject = viper.GetString(config.KeyProxmoxUsername)
+			b, err := json.Marshal(session)
+			if err != nil {
+				c.Error(err)
+				c.AbortWithStatusJSON(http.StatusInternalServerError, server.ErrorRes{Error: err.Error()})
+				return
+			}
+
+			if err := h.cache.Set(c, fmt.Sprintf("proxmox:%s", sessionKey), string(b), store.WithExpiration(viper.GetDuration(config.KeyCacheTTL))); err != nil {
+				c.Error(err)
+				c.AbortWithStatusJSON(http.StatusInternalServerError, server.ErrorRes{Error: err.Error()})
+				return
+			}
+
+			c.JSON(http.StatusOK, session)
+			return
+		}
+	}
+
+	c.JSON(http.StatusUnauthorized, server.ErrorRes{Error: server.ErrInvalidSession.Error()})
+}
+
 func (h *SessionHandler) ArgoCD(c *gin.Context) {
 	if sessionKey, err := c.Cookie("argocd.token"); err == nil {
 		s, err := h.cache.Get(c, fmt.Sprintf("argo-cd:%s", sessionKey))
@@ -192,6 +242,47 @@ func (h *SessionHandler) N8N(c *gin.Context) {
 	c.JSON(http.StatusUnauthorized, server.ErrorRes{Error: server.ErrInvalidSession.Error()})
 }
 
+func (h *SessionHandler) NocoDB(c *gin.Context) {
+	if sessionKey, err := c.Cookie("refresh_token"); err == nil {
+		s, err := h.cache.Get(c, fmt.Sprintf("nocodb:%s", sessionKey))
+		if err == nil {
+			h.logger.Debug().Str("session", s).Msg("session cache hit")
+			var session OrySession
+			if err := json.Unmarshal([]byte(s), &session); err == nil {
+				c.JSON(http.StatusOK, session)
+				return
+			} else {
+				h.logger.Warn().Err(err).Msg("session cache hit but unmarshal failed")
+				if err := h.cache.Delete(c, fmt.Sprintf("nocodb:%s", sessionKey)); err != nil {
+					h.logger.Warn().Err(err).Msg("session cache delete failed")
+				}
+			}
+		} else {
+			h.logger.Debug().Err(err).Msg("session cache miss")
+		}
+
+		var session OrySession
+		session.Subject = viper.GetString(config.KeyNocoDBUsername)
+		b, err := json.Marshal(session)
+		if err != nil {
+			c.Error(err)
+			c.AbortWithStatusJSON(http.StatusInternalServerError, server.ErrorRes{Error: err.Error()})
+			return
+		}
+
+		if err := h.cache.Set(c, fmt.Sprintf("nocodb:%s", sessionKey), string(b), store.WithExpiration(viper.GetDuration(config.KeyCacheTTL))); err != nil {
+			c.Error(err)
+			c.AbortWithStatusJSON(http.StatusInternalServerError, server.ErrorRes{Error: err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, session)
+		return
+	}
+
+	c.JSON(http.StatusUnauthorized, server.ErrorRes{Error: server.ErrInvalidSession.Error()})
+}
+
 func RegisterSessionHandler(e *gin.Engine, c cache.CacheInterface[string]) {
 	h := &SessionHandler{
 		logger: log.With().Str("logger", "sessionHandler").Logger(),
@@ -208,8 +299,10 @@ func RegisterSessionHandler(e *gin.Engine, c cache.CacheInterface[string]) {
 
 	session := e.Group("/session")
 	{
+		session.GET("/proxmox", h.Proxmox)
 		session.GET("/argo-cd", h.ArgoCD)
 		session.GET("/ghost", h.Ghost)
 		session.GET("/n8n", h.N8N)
+		session.GET("/nocodb", h.NocoDB)
 	}
 }

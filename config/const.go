@@ -23,6 +23,10 @@ const (
 	KeyCacheRedisDB       = "cache.redis.db"
 	KeyCacheRedisPassword = "cache.redis.password"
 
+	KeyProxmoxServerURL = "proxmox.server_url"
+	KeyProxmoxUsername  = "proxmox.username"
+	KeyProxmoxPassword  = "proxmox.password"
+
 	KeyArgoCDServerURL = "argo_cd.server_url"
 	KeyArgoCDUsername  = "argo_cd.username"
 	KeyArgoCDPassword  = "argo_cd.password"
