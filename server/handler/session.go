@@ -37,8 +37,8 @@ type SessionHandler struct {
 }
 
 func (h *SessionHandler) Proxmox(c *gin.Context) {
-	if sessionKey, err := c.Cookie("PVEAuthCookie"); err == nil {
-		s, err := h.cache.Get(c, fmt.Sprintf("proxmox:%s", sessionKey))
+	if ticket, err := c.Request.Cookie("PVEAuthCookie"); err == nil {
+		s, err := h.cache.Get(c, fmt.Sprintf("proxmox:%s", ticket.Value))
 		if err == nil {
 			h.logger.Debug().Str("session", s).Msg("session cache hit")
 			var session OrySession
@@ -47,7 +47,7 @@ func (h *SessionHandler) Proxmox(c *gin.Context) {
 				return
 			} else {
 				h.logger.Warn().Err(err).Msg("session cache hit but unmarshal failed")
-				if err := h.cache.Delete(c, fmt.Sprintf("proxmox:%s", sessionKey)); err != nil {
+				if err := h.cache.Delete(c, fmt.Sprintf("proxmox:%s", ticket.Value)); err != nil {
 					h.logger.Warn().Err(err).Msg("session cache delete failed")
 				}
 			}
@@ -58,7 +58,7 @@ func (h *SessionHandler) Proxmox(c *gin.Context) {
 		res, err := h.client.R().SetContext(c).
 			SetCookie(&http.Cookie{
 				Name:  "PVEAuthCookie",
-				Value: sessionKey,
+				Value: ticket.Value,
 			}).
 			Get(JoinURL(viper.GetString(config.KeyProxmoxServerURL), "/api2/extjs/version"))
 
@@ -72,7 +72,7 @@ func (h *SessionHandler) Proxmox(c *gin.Context) {
 				return
 			}
 
-			if err := h.cache.Set(c, fmt.Sprintf("proxmox:%s", sessionKey), string(b), store.WithExpiration(viper.GetDuration(config.KeyCacheTTL))); err != nil {
+			if err := h.cache.Set(c, fmt.Sprintf("proxmox:%s", ticket.Value), string(b), store.WithExpiration(viper.GetDuration(config.KeyCacheTTL))); err != nil {
 				c.Error(err)
 				c.AbortWithStatusJSON(http.StatusInternalServerError, server.ErrorRes{Error: err.Error()})
 				return

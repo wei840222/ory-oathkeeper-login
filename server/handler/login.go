@@ -6,9 +6,12 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptrace"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-resty/resty/v2"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"github.com/tidwall/gjson"
 	"github.com/wei840222/ory-oathkeeper-login/config"
@@ -19,15 +22,17 @@ import (
 )
 
 type LoginHandler struct {
+	logger zerolog.Logger
 	client *resty.Client
 }
 
 func (h *LoginHandler) Proxmox(c *gin.Context) {
-	if ticket, err := c.Cookie("PVEAuthCookie"); err == nil {
+	if ticket, err := c.Request.Cookie("PVEAuthCookie"); err == nil {
+		h.logger.Debug().Str("cookie", ticket.Value).Msg("Using existing Proxmox cookie")
 		res, err := h.client.R().SetContext(c).
 			SetCookie(&http.Cookie{
 				Name:  "PVEAuthCookie",
-				Value: ticket,
+				Value: ticket.Value,
 			}).
 			Get(JoinURL(viper.GetString(config.KeyProxmoxServerURL), "/api2/extjs/version"))
 		if err == nil && res.IsSuccess() {
@@ -56,7 +61,14 @@ func (h *LoginHandler) Proxmox(c *gin.Context) {
 		return
 	}
 
-	c.SetCookie("PVEAuthCookie", gjson.GetBytes(res.Body(), "data.ticket").String(), 0, "/", c.Request.Host, true, false)
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     "PVEAuthCookie",
+		Value:    strings.NewReplacer(":", "%3A", "=", "%3D").Replace(gjson.GetBytes(res.Body(), "data.ticket").String()),
+		Path:     "/",
+		Secure:   true,
+		HttpOnly: false,
+		SameSite: http.SameSiteLaxMode,
+	})
 	c.Redirect(http.StatusFound, c.DefaultQuery("return_url", "/"))
 }
 
@@ -220,6 +232,7 @@ func RegisterLoginHandler(e *gin.Engine) {
 	customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
 	h := &LoginHandler{
+		logger: log.With().Str("logger", "loginHandler").Logger(),
 		client: resty.NewWithClient(&http.Client{
 			Transport: otelhttp.NewTransport(
 				customTransport,
